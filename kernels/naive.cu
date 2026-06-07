@@ -1,0 +1,24 @@
+#include "utils/common.cuh"
+#include "utils/registry.cuh"
+
+__global__ void sgemm_naive_kernel(int M, int N, int K, float alpha,
+                                   const float *A, const float *B, float beta,
+                                   float *C) {
+  const uint x = blockIdx.x * blockDim.x + threadIdx.x;
+  const uint y = blockIdx.y * blockDim.y + threadIdx.y;
+  if (x < M && y < N) {
+    float tmp = 0.0f;
+    for (int i = 0; i < K; ++i)
+      tmp += A[x * K + i] * B[i * N + y];
+    C[x * N + y] = alpha * tmp + beta * C[x * N + y];
+  }
+}
+
+void launch_naive(int M, int N, int K, float alpha, const float *A,
+                  const float *B, float beta, float *C) {
+  dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32), 1);
+  dim3 blockDim(32, 32, 1);
+  sgemm_naive_kernel<<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
+}
+
+REGISTER_KERNEL("naive", launch_naive);
