@@ -33,5 +33,5 @@ struct KernelRegistrar {
   }
 };
 
-#define REGISTER_KERNEL(display_name, launch_fn)                                \
-  static KernelRegistrar registrar_##launch_fn(display_name, launch_fn)
+#define REGISTER_KERNEL(display_name)                                           \
+  static KernelRegistrar registrar(display_name, launcher)

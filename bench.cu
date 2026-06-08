@@ -33,8 +33,9 @@ struct Result {
   int errors;
 };
 
-int main() {
-  const int M = 4096, N = 4096, K = 4096;
+int main(int argc, char **argv) {
+  const int S = (argc > 1) ? atoi(argv[1]) : 4096;
+  const int M = S, N = S, K = S;
   const float alpha = 1.0f, beta = 0.0f;
   const int WARMUP = 3, RUNS = 10;
   const char *kBaseline = "cuBLAS";
@@ -81,18 +82,20 @@ int main() {
   if (baseline) {
     CUDA_CHECK(cudaMemset(dC, 0, bytes_C));
     baseline->fn(M, N, K, alpha, dA, dB, beta, dC);
-    CUDA_CHECK(cudaDeviceSynchronize());
+    CUDA_CHECK_KERNEL(baseline->name.c_str());
     CUDA_CHECK(cudaMemcpy(hRef, dC, bytes_C, cudaMemcpyDeviceToHost));
     have_ref = true;
   }
 
   std::vector<Result> results;
   for (const auto &e : entries) {
+    CUDA_CHECK(cudaMemcpy(dA, hA, bytes_A, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(dB, hB, bytes_B, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemset(dC, 0, bytes_C));
+
     for (int i = 0; i < WARMUP; ++i)
       e.fn(M, N, K, alpha, dA, dB, beta, dC);
-    CUDA_CHECK(cudaGetLastError());
-    CUDA_CHECK(cudaDeviceSynchronize());
+    CUDA_CHECK_KERNEL(e.name.c_str());
 
     float ms = 0.f;
     {
@@ -100,7 +103,7 @@ int main() {
       for (int i = 0; i < RUNS; ++i)
         e.fn(M, N, K, alpha, dA, dB, beta, dC);
     }
-    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK_KERNEL(e.name.c_str());
 
     CUDA_CHECK(cudaMemcpy(hC, dC, bytes_C, cudaMemcpyDeviceToHost));
     const int errors = have_ref ? count_mismatches(M, N, hRef, hC) : 0;

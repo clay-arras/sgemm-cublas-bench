@@ -9,9 +9,9 @@ public:
     CUDA_CHECK(cudaEventRecord(start_));
   }
   ~ScopedGpuTimer() {
-    cudaEventRecord(stop_);
-    cudaEventSynchronize(stop_);
-    cudaEventElapsedTime(&out_ms_, start_, stop_);
+    CUDA_CHECK(cudaEventRecord(stop_));
+    CUDA_CHECK(cudaEventSynchronize(stop_));
+    CUDA_CHECK(cudaEventElapsedTime(&out_ms_, start_, stop_));
     cudaEventDestroy(start_);
     cudaEventDestroy(stop_);
   }
