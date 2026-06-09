@@ -18,7 +18,7 @@ run: $(TARGET)
 	./$(TARGET)
 
 sanitize: $(TARGET)
-	compute-sanitizer --tool memcheck --destroy-on-device-error kernel ./$(TARGET) 256
+	compute-sanitizer --tool memcheck --destroy-on-device-error kernel ./$(TARGET) --size=256
 
 clean:
 	rm -f $(TARGET) $(OBJS)
