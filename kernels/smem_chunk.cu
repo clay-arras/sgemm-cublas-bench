@@ -3,22 +3,21 @@
 
 namespace {
 
-// TODO: blocksize is probably a horrible horrible name for this
-#define BLOCKSIZE 16
+#define CHUNKSIZE 16
 
 __global__ void kernel(int M, int N, int K, float alpha, const float *A,
                        const float *B, float beta, float *C) {
 
-    int rowIdx = blockIdx.x * BLOCKSIZE;
-    int colIdx = blockIdx.y * BLOCKSIZE;
+    int rowIdx = blockIdx.x * CHUNKSIZE;
+    int colIdx = blockIdx.y * CHUNKSIZE;
 
-    __shared__ float sA[BLOCKSIZE * BLOCKSIZE]; 
-    __shared__ float sB[BLOCKSIZE * BLOCKSIZE]; 
+    __shared__ float sA[CHUNKSIZE * CHUNKSIZE]; 
+    __shared__ float sB[CHUNKSIZE * CHUNKSIZE]; 
 
 
     float tmp = 0.0;
-    for (int slideIdx = 0; slideIdx < K; slideIdx += BLOCKSIZE) {
-        int threadOffset = threadIdx.x + threadIdx.y * BLOCKSIZE;
+    for (int slideIdx = 0; slideIdx < K; slideIdx += CHUNKSIZE) {
+        int threadOffset = threadIdx.x + threadIdx.y * CHUNKSIZE;
 
         int Aidx_x = threadIdx.x + rowIdx;
         int Aidx_y = slideIdx + threadIdx.y;
@@ -38,8 +37,8 @@ __global__ void kernel(int M, int N, int K, float alpha, const float *A,
         
         __syncthreads();
 
-        for (int i = 0; i < BLOCKSIZE; i++)
-            tmp += sA[threadIdx.x + BLOCKSIZE * i] * sB[i + BLOCKSIZE * threadIdx.y];
+        for (int i = 0; i < CHUNKSIZE; i++)
+            tmp += sA[threadIdx.x + CHUNKSIZE * i] * sB[i + CHUNKSIZE * threadIdx.y];
 
         __syncthreads();
     }
@@ -51,11 +50,11 @@ __global__ void kernel(int M, int N, int K, float alpha, const float *A,
 
 void launcher(int M, int N, int K, float alpha, const float *A,
               const float *B, float beta, float *C) {
-  dim3 gridDim(CEIL_DIV(M, BLOCKSIZE), CEIL_DIV(N, BLOCKSIZE), 1);
-  dim3 blockDim(BLOCKSIZE, BLOCKSIZE, 1);
+  dim3 gridDim(CEIL_DIV(M, CHUNKSIZE), CEIL_DIV(N, CHUNKSIZE), 1);
+  dim3 blockDim(CHUNKSIZE, CHUNKSIZE, 1);
   kernel<<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
 }
 
 }
 
-REGISTER_KERNEL("smem_block");
+REGISTER_KERNEL("smem_chunk");
