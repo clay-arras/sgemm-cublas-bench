@@ -4,9 +4,9 @@
 
 namespace {
 
-#define T 8
-#define CH_D 32
-#define CH_K 4 
+#define T 16
+#define CH_D 64
+#define CH_K 4
 
 // TODO: swap axis cache locality optimization?
 __global__ void kernel(int M, int N, int K, float alpha, const float *A,
@@ -58,7 +58,7 @@ __global__ void kernel(int M, int N, int K, float alpha, const float *A,
 
 void launcher(int M, int N, int K, float alpha, const float *A,
               const float *B, float beta, float *C) {
-  dim3 gridDim(CEIL_DIV(M, CH_K), CEIL_DIV(N, CH_D), 1);
+  dim3 gridDim(CEIL_DIV(M, CH_K * T), CEIL_DIV(N, CH_D), 1);
   dim3 blockDim(CH_K, CH_D, 1);
   kernel<<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
 }

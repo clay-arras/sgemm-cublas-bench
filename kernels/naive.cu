@@ -3,6 +3,8 @@
 
 namespace {
 
+#define BLOCKSIZE 16
+
 __global__ void kernel(int M, int N, int K, float alpha, const float *A,
                        const float *B, float beta, float *C) {
   const uint x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -17,8 +19,8 @@ __global__ void kernel(int M, int N, int K, float alpha, const float *A,
 
 void launcher(int M, int N, int K, float alpha, const float *A,
               const float *B, float beta, float *C) {
-  dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32), 1);
-  dim3 blockDim(32, 32, 1);
+  dim3 gridDim(CEIL_DIV(M, BLOCKSIZE), CEIL_DIV(N, BLOCKSIZE), 1);
+  dim3 blockDim(BLOCKSIZE, BLOCKSIZE, 1);
   kernel<<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
 }
 
